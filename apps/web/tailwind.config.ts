@@ -1,0 +1,101 @@
+import type { Config } from "tailwindcss";
+
+const config: Config = {
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "tertiary-container": "#92484a",
+        "on-primary": "rgb(var(--on-primary) / <alpha-value>)",
+        "on-error": "#ffffff",
+        "tertiary-fixed-dim": "#ffb3b3",
+        "tertiary-fixed": "#ffdad9",
+        "secondary-fixed-dim": "#c7c6c6",
+        "outline-variant": "rgb(var(--outline-variant) / <alpha-value>)",
+        "on-secondary-container": "#626262",
+        "surface": "rgb(var(--surface) / <alpha-value>)",
+        "secondary-container": "#e1dfdf",
+        "surface-dim": "#d7dbd6",
+        "primary-fixed-dim": "#8ad6ae",
+        "primary-fixed": "#a5f3c9",
+        "inverse-on-surface": "#eef2ed",
+        "on-surface": "rgb(var(--on-surface) / <alpha-value>)",
+        "on-primary-fixed-variant": "#005235",
+        "error": "#ba1a1a",
+        "on-tertiary-container": "#ffcccc",
+        "surface-container-highest": "rgb(var(--surface-container-highest) / <alpha-value>)",
+        "on-tertiary-fixed-variant": "#753134",
+        "on-surface-variant": "rgb(var(--on-surface-variant) / <alpha-value>)",
+        "inverse-surface": "#2d312e",
+        "on-secondary-fixed-variant": "#464747",
+        "on-secondary-fixed": "#1b1c1c",
+        "surface-bright": "rgb(var(--surface) / <alpha-value>)",
+        "error-container": "#ffdad6",
+        "on-background": "rgb(var(--on-background) / <alpha-value>)",
+        "on-error-container": "#93000a",
+        "inverse-primary": "#8ad6ae",
+        "on-primary-container": "rgb(var(--on-primary-container) / <alpha-value>)",
+        "tertiary": "#753134",
+        "background": "rgb(var(--background) / <alpha-value>)",
+        "primary-container": "rgb(var(--primary-container) / <alpha-value>)",
+        "primary": "rgb(var(--primary) / <alpha-value>)",
+        "surface-tint": "rgb(var(--primary) / <alpha-value>)",
+        "surface-container-high": "rgb(var(--surface-container-high) / <alpha-value>)",
+        "on-secondary": "#ffffff",
+        "surface-container-low": "rgb(var(--surface-container-low) / <alpha-value>)",
+        "surface-variant": "rgb(var(--surface-container-highest) / <alpha-value>)",
+        "secondary": "#5e5e5e",
+        "on-tertiary-fixed": "#3c060c",
+        "secondary-fixed": "#e4e2e2",
+        "surface-container-lowest": "rgb(var(--surface-container-lowest) / <alpha-value>)",
+        "outline": "rgb(var(--outline) / <alpha-value>)",
+        "on-primary-fixed": "#002113",
+        "on-tertiary": "#ffffff",
+        "surface-container": "rgb(var(--surface-container) / <alpha-value>)"
+      },
+      borderRadius: {
+        "DEFAULT": "0.25rem",
+        "lg": "0.5rem",
+        "xl": "0.75rem",
+        "full": "9999px"
+      },
+      spacing: {
+        "lg": "24px",
+        "xl": "32px",
+        "xs": "8px",
+        "sm": "12px",
+        "md": "16px",
+        "xxl": "48px",
+        "huge": "64px",
+        "base": "4px"
+      },
+      fontFamily: {
+        "body-sm": ["var(--font-geist)", "sans-serif"],
+        "headline-lg": ["var(--font-geist)", "sans-serif"],
+        "body-md": ["var(--font-geist)", "sans-serif"],
+        "price-md": ["var(--font-mono)", "monospace"],
+        "price-lg": ["var(--font-mono)", "monospace"],
+        "body-lg": ["var(--font-geist)", "sans-serif"],
+        "headline-md": ["var(--font-geist)", "sans-serif"],
+        "label-xs": ["var(--font-geist)", "sans-serif"]
+      },
+      fontSize: {
+        "body-sm": ["13px", { "lineHeight": "1.6", "fontWeight": "400" }],
+        "headline-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "500" }],
+        "body-md": ["15px", { "lineHeight": "1.6", "fontWeight": "400" }],
+        "price-md": ["15px", { "lineHeight": "1,6", "fontWeight": "500" }],
+        "price-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "500" }],
+        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+        "headline-md": ["24px", { "lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+        "label-xs": ["11px", { "lineHeight": "1.4", "fontWeight": "500" }]
+      }
+    },
+  },
+  plugins: [],
+};
+export default config;

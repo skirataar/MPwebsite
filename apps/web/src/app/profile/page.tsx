@@ -1,0 +1,394 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { PRODUCTS, Product } from "../../data/products";
+import { getLikes, toggleLikeProduct } from "../../utils/likes";
+
+import { useSession } from "next-auth/react";
+
+const MOCK_SELLER_PRODUCTS: Product[] = [
+  {
+    id: 101,
+    title: "Terracotta Tea Kulhads (Set of 6)",
+    category: "handmade",
+    description: "Authentic mud kulhads double fired for premium aroma and earthy tea experience.",
+    price: 380,
+    seller: "Dev Artisan",
+    username: "@devartisan",
+    location: "Kolkata, India",
+    likes: 85,
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150",
+    videoBg: "https://lh3.googleusercontent.com/aida-public/AB6AXuB3fuGRbIJWE_Xw_-QGxSkObMts6gXq_tQCEatfJ3GAH4n-LzWpdYfUkFeiYIgyiNqeAxvtONdgP_O8eGfoayxqFr_V9_AQ6mbs0sNNX3UG-DOHkQLKBsTM49F-XVu3fACsaOEqttQM1bC7VBXKQNANwKRwUOE_Jtnk_fEzuev821yrCpNa_SjsJUHGmCnq_KXECZzYmBYzNyhcqgPvNkKjcqBCjCVRam8GIq5vUXU_Jp9icO0lkeG7j17mCRHYuBs9XK5XP0fMmEMa",
+    productThumb: "https://lh3.googleusercontent.com/aida-public/AB6AXuB3fuGRbIJWE_Xw_-QGxSkObMts6gXq_tQCEatfJ3GAH4n-LzWpdYfUkFeiYIgyiNqeAxvtONdgP_O8eGfoayxqFr_V9_AQ6mbs0sNNX3UG-DOHkQLKBsTM49F-XVu3fACsaOEqttQM1bC7VBXKQNANwKRwUOE_Jtnk_fEzuev821yrCpNa_SjsJUHGmCnq_KXECZzYmBYzNyhcqgPvNkKjcqBCjCVRam8GIq5vUXU_Jp9icO0lkeG7j17mCRHYuBs9XK5XP0fMmEMa",
+    dataAlt: "Traditional mud kulhad set."
+  },
+  {
+    id: 102,
+    title: "Handmade Organic Linen Hand Towels",
+    category: "fashion",
+    description: "Premium pure linen napkins, super absorbent, soft skin-friendly textures.",
+    price: 799,
+    seller: "Dev Artisan",
+    username: "@devartisan",
+    location: "Kolkata, India",
+    likes: 124,
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150",
+    videoBg: "https://lh3.googleusercontent.com/aida-public/AB6AXuCwb_xHRjb0aQTDbRLAS2av8GgVZKmDFhXj19dloFD7On4gdrFSTaHt5P60piRfi3G85fWZxVlP-B9oFSjny7UCgZ1atqwCGbGz_WdP_8jjkbY1e2Z6HhVpW25CoSMhg9S0-zIg8tK9ruOBPO5_xK0UKWmeJ35kVMJMSPom_40Mz0XGomWvdi1RBOuAPgJ8Vh4xFM8kipOgN-a21MsjowoKnXLKpVIE4mD-Oi1OuN_1KKgIcVpSazQMehFVz4zxKB8htq7TkdmXstsh",
+    productThumb: "https://lh3.googleusercontent.com/aida-public/AB6AXuCXpDM-4AY5Rnz3IKeYtmhRLtS74oqkq5jyt4D_xhgXg7LyEsa95d0HDqz46nbdndRtF4mZJowoKYxsp8YuZw5WmUiAOTQXbM38eoJfOBb3Jq1BvNXQQhpy33XLuahOvTi7uQwxqrt8GJDJ3TdyK0zjgo7vLJ3zQDBjZJZ_qbT0zvrebR3T3sw9EUqwF_GDtTOa7Vwp6LryVJPmeX6gvz0pvrmEx7nxpPZHTy3KvDEmtlnhV6pwyODpflzL67OcLWJCrh0Ztr44pJnL",
+    dataAlt: "Neatly folded linen towels."
+  }
+];
+
+export default function ProfilePage() {
+  const { data: session, status } = useSession();
+  const [likedProducts, setLikedProducts] = useState<Product[]>([]);
+  const [activeTab, setActiveTab] = useState("liked");
+  const [isMounted, setIsMounted] = useState(false);
+  const [accountType, setAccountType] = useState("customer");
+  const [ordersCount, setOrdersCount] = useState(0);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const res = await fetch("/api/orders");
+        if (res.ok) {
+          const data = await res.json();
+          setOrdersCount(data.orders?.length || 0);
+        }
+      } catch (err) {
+        console.error("Failed to fetch orders count", err);
+      }
+    };
+    if (status === "authenticated") {
+      fetchOrders();
+    }
+  }, [status]);
+
+  useEffect(() => {
+    setIsMounted(true);
+    // Theme Sync
+    const theme = localStorage.getItem("theme");
+    const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const shouldBeDark = theme === "dark" || (!theme && systemPrefersDark);
+    if (shouldBeDark) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+
+    const loadData = () => {
+      // Sync Account Type
+      const typeVal = localStorage.getItem("v-market-account-type") || "customer";
+      setAccountType(typeVal);
+
+      // Sync Likes
+      const likedIds = getLikes();
+      const filtered = PRODUCTS.filter((p) => likedIds.includes(p.id));
+      setLikedProducts(filtered);
+    };
+
+    loadData();
+
+    window.addEventListener("likes-updated", loadData);
+    window.addEventListener("account-type-updated", loadData);
+
+    return () => {
+      window.removeEventListener("likes-updated", loadData);
+      window.removeEventListener("account-type-updated", loadData);
+    };
+  }, []);
+
+  const handleUnlike = (productId: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleLikeProduct(productId);
+  };
+
+  if (!isMounted || status === "loading") {
+    return (
+      <div className="w-screen min-h-screen bg-background text-on-surface flex items-center justify-center font-body-md">
+        <div className="animate-pulse">Loading profile details...</div>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return (
+      <div className="w-screen min-h-screen bg-background text-on-surface flex items-center justify-center font-body-md">
+        <div className="animate-pulse">Redirecting to login portal...</div>
+      </div>
+    );
+  }
+
+  const displayName = session?.user?.name || "Artisan Shopper";
+  const username = session?.user?.email ? `@${session.user.email.split("@")[0]}` : "@user";
+  const avatar = session?.user?.image || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150";
+
+  return (
+    <div className="w-screen min-h-screen bg-background text-on-surface antialiased flex flex-col font-body-md overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container">
+      
+      {/* 1. Header (Sticky App Bar) */}
+      <header className="fixed top-0 left-0 w-full z-50 bg-background/90 backdrop-blur-md px-md py-sm flex items-center justify-between border-b border-outline-variant/30 max-w-lg mx-auto right-0">
+        <div className="flex items-center gap-sm">
+          <Link href="/" aria-label="Go back" className="p-xs text-on-surface hover:opacity-80 transition-opacity flex items-center">
+            <span className="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+          </Link>
+          <h1 className="font-body-lg text-body-lg font-medium text-on-surface">Profile</h1>
+        </div>
+        <div className="flex items-center gap-md">
+          {/* Settings gear link */}
+          <Link 
+            href="/settings"
+            className="p-xs text-on-surface hover:opacity-80 transition-opacity flex items-center justify-center"
+            aria-label="Settings"
+          >
+            <span className="material-symbols-outlined">settings</span>
+          </Link>
+        </div>
+      </header>
+
+      {/* 2. Main Profile Content Canvas */}
+      <main className="flex-grow pt-[72px] pb-lg px-md max-w-lg mx-auto w-full flex flex-col justify-start gap-lg">
+        
+        {/* Profile Card Info Header */}
+        <section className="bg-surface rounded-xl border-[0.5px] border-outline-variant p-md flex items-center gap-md shadow-sm">
+          <div className="w-16 h-16 rounded-full overflow-hidden border border-outline-variant bg-surface-variant flex-shrink-0">
+            <img 
+              alt="User profile avatar" 
+              className="w-full h-full object-cover" 
+              src={avatar}
+              referrerPolicy="no-referrer"
+            />
+          </div>
+          <div className="flex-grow flex flex-col">
+            <div className="flex items-center gap-sm flex-wrap">
+              <h2 className="font-headline-md text-headline-md font-semibold text-on-surface leading-tight">
+                {displayName}
+              </h2>
+              <span className="bg-primary/10 text-primary font-label-xs text-[10px] px-sm py-[2px] rounded-full font-bold capitalize border border-primary/20">
+                {accountType}
+              </span>
+            </div>
+            <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5 truncate max-w-[200px]">
+              {username}
+            </p>
+            
+            <div className="flex items-center gap-md mt-sm border-t border-outline-variant/20 pt-xs">
+              <div className="flex flex-col">
+                <span className="font-price-md text-price-md font-bold text-on-surface">
+                  {likedProducts.length}
+                </span>
+                <span className="font-label-xs text-[10px] text-on-surface-variant uppercase tracking-wider">
+                  Likes
+                </span>
+              </div>
+              <div className="w-[1px] h-6 bg-outline-variant/30"></div>
+              <Link href="/orders" className="flex flex-col hover:opacity-80 transition-opacity cursor-pointer">
+                <span className="font-price-md text-price-md font-bold text-on-surface">
+                  {ordersCount}
+                </span>
+                <span className="font-label-xs text-[10px] text-on-surface-variant uppercase tracking-wider">
+                  Orders
+                </span>
+              </Link>
+              <div className="w-[1px] h-6 bg-outline-variant/30"></div>
+              <div className="flex flex-col">
+                <span className="font-price-md text-price-md font-bold text-on-surface">
+                  {accountType === "seller" ? MOCK_SELLER_PRODUCTS.length : 0}
+                </span>
+                <span className="font-label-xs text-[10px] text-on-surface-variant uppercase tracking-wider">
+                  Items
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Tab Controls Navigation */}
+        <section className="border-b border-outline-variant/40 flex">
+          <button 
+            onClick={() => setActiveTab("liked")}
+            className={`flex-1 text-center py-sm font-label-xs text-label-xs border-b-2 transition-all font-semibold ${
+              activeTab === "liked"
+                ? "border-primary text-primary"
+                : "border-transparent text-on-surface-variant hover:text-on-surface"
+            }`}
+          >
+            Liked Videos
+          </button>
+          {accountType === "seller" && (
+            <button 
+              onClick={() => setActiveTab("boutique")}
+              className={`flex-1 text-center py-sm font-label-xs text-label-xs border-b-2 transition-all font-semibold ${
+                activeTab === "boutique"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-on-surface-variant hover:text-on-surface"
+              }`}
+            >
+              My Boutique
+            </button>
+          )}
+          <Link 
+            href="/settings"
+            className="flex-1 text-center py-sm font-label-xs text-label-xs border-b-2 border-transparent text-on-surface-variant hover:text-on-surface flex items-center justify-center font-semibold"
+          >
+            Settings
+          </Link>
+        </section>
+
+        {/* Tab Content Rendering */}
+        <section className="flex-grow flex flex-col justify-start">
+          {activeTab === "liked" && (
+            likedProducts.length === 0 ? (
+              /* EMPTY STATE */
+              <div className="flex flex-col items-center justify-center py-huge px-xl text-center my-auto">
+                <span className="material-symbols-outlined text-[64px] text-outline-variant mb-md" data-icon="favorite_border">
+                  favorite_border
+                </span>
+                <h2 className="font-body-lg text-body-lg font-medium text-on-surface mb-xs">No liked videos yet</h2>
+                <p className="font-body-sm text-body-sm text-on-surface-variant mb-lg leading-relaxed max-w-xs">
+                  Discover unique creations from local artisan sellers. Double tap or click the heart button to save your favorites.
+                </p>
+                <Link 
+                  href="/"
+                  className="h-xxl px-lg border border-primary text-primary bg-transparent rounded-lg font-body-md text-body-md hover:bg-primary-container/10 transition-colors flex items-center justify-center active:scale-95"
+                >
+                  Browse home feed
+                </Link>
+              </div>
+            ) : (
+              /* LIKED VIDEOS GRID */
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-md">
+                {likedProducts.map((product) => (
+                  <Link 
+                    href={`/product/${product.id}`}
+                    key={product.id}
+                    className="group flex flex-col bg-surface rounded-xl border-[0.5px] border-outline-variant overflow-hidden hover:shadow-md transition-shadow relative cursor-pointer"
+                  >
+                    {/* Image Area */}
+                    <div className="aspect-[3/4] bg-surface-variant overflow-hidden relative">
+                      <img 
+                        alt={product.title} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        src={product.productThumb}
+                      />
+                      {/* Badge overlay */}
+                      {product.discount && (
+                        <span className="absolute top-xs left-xs bg-primary text-on-primary font-label-xs text-[9px] px-sm py-[2px] rounded-full font-medium">
+                          {product.discount}
+                        </span>
+                      )}
+                    </div>
+                    {/* Content Details Area */}
+                    <div className="p-sm flex flex-col gap-xs min-h-[92px] justify-between">
+                      <div className="flex flex-col">
+                        <span className="font-body-sm text-[13px] font-semibold text-on-surface line-clamp-1 leading-tight group-hover:text-primary transition-colors">
+                          {product.title}
+                        </span>
+                        <span className="font-label-xs text-[10px] text-on-surface-variant mt-0.5">
+                          by {product.seller}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between mt-xs border-t border-outline-variant/10 pt-xs">
+                        <span className="font-price-md text-price-md text-primary font-bold">
+                          ₹{product.price.toLocaleString()}
+                        </span>
+                        {/* Unlike Button Option */}
+                        <button
+                          onClick={(e) => handleUnlike(product.id, e)}
+                          className="p-xs text-primary hover:opacity-80 transition-opacity flex items-center justify-center rounded-full bg-primary-container/10 active:scale-90"
+                          aria-label="Unlike product"
+                        >
+                          <span className="material-symbols-outlined text-[16px] text-fill" style={{ fontVariationSettings: "'FILL' 1" }}>
+                            favorite
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )
+          )}
+
+          {activeTab === "boutique" && (
+            accountType === "seller" ? (
+              /* SELLER BOUTIQUE PRODUCTS GRID */
+              <div className="flex flex-col gap-md">
+                <div className="flex items-center justify-between flex-wrap gap-sm">
+                  <h3 className="font-body-sm text-body-sm font-semibold text-on-surface">Your Listed Products</h3>
+                  <Link 
+                    href="/seller/dashboard"
+                    className="flex items-center gap-xs font-label-xs text-label-xs text-primary font-bold hover:underline bg-primary/5 px-sm py-[4px] rounded-md transition-all active:scale-95"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">dashboard</span> Seller Dashboard
+                  </Link>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-md">
+                  {MOCK_SELLER_PRODUCTS.map((product) => (
+                    <div 
+                      key={product.id}
+                      className="group flex flex-col bg-surface rounded-xl border-[0.5px] border-outline-variant overflow-hidden hover:shadow-md transition-shadow relative"
+                    >
+                      <div className="aspect-[3/4] bg-surface-variant overflow-hidden relative">
+                        <img 
+                          alt={product.title} 
+                          className="w-full h-full object-cover"
+                          src={product.productThumb}
+                        />
+                      </div>
+                      <div className="p-sm flex flex-col gap-xs min-h-[92px] justify-between">
+                        <div className="flex flex-col">
+                          <span className="font-body-sm text-[13px] font-semibold text-on-surface line-clamp-1 leading-tight">
+                            {product.title}
+                          </span>
+                          <span className="font-label-xs text-[10px] text-on-surface-variant mt-0.5">
+                            {product.location}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between mt-xs border-t border-outline-variant/10 pt-xs">
+                          <span className="font-price-md text-price-md text-primary font-bold">
+                            ₹{product.price.toLocaleString()}
+                          </span>
+                          <button 
+                            onClick={() => alert("Edit product details drawer...")}
+                            className="p-xs text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center active:scale-90"
+                            aria-label="Edit craft"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">edit</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              /* CUSTOMER WARNING */
+              <div className="flex flex-col items-center justify-center py-huge px-xl text-center bg-surface-container-low border border-outline-variant/30 rounded-xl">
+                <span className="material-symbols-outlined text-[48px] text-outline mb-sm" data-icon="storefront">
+                  storefront
+                </span>
+                <h3 className="font-body-md text-body-md font-semibold text-on-surface mb-xs">Boutique Disabled</h3>
+                <p className="font-body-sm text-body-sm text-on-surface-variant mb-md max-w-[280px] leading-relaxed">
+                  Only Seller accounts can host digital boutiques. Switch your account type to Seller in Settings to showcase your craftsmanship.
+                </p>
+                <Link 
+                  href="/settings"
+                  className="h-xl px-md bg-primary text-on-primary rounded-lg font-label-xs text-label-xs font-bold hover:opacity-90 flex items-center justify-center active:scale-95 transition-all shadow-sm"
+                >
+                  Go to Settings
+                </Link>
+              </div>
+            )
+          )}
+        </section>
+
+      </main>
+
+    </div>
+  );
+}
