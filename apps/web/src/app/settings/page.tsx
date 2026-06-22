@@ -15,7 +15,12 @@ export default function SettingsPage() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const sessionRole = (session?.user as any)?.role as string | undefined;
-  const accountLabel = sessionRole === "SELLER" ? "Artisan Seller" : "Customer";
+  const accountLabel =
+    sessionRole === "ADMIN"
+      ? "Administrator"
+      : sessionRole === "SELLER"
+      ? "Artisan Seller"
+      : "Customer";
 
   useEffect(() => {
     const theme = localStorage.getItem("theme");
@@ -79,13 +84,15 @@ export default function SettingsPage() {
     );
   }
 
+  const backHref = sessionRole === "ADMIN" ? "/admin" : "/profile";
+
   return (
     <div className="w-screen min-h-screen bg-background text-on-surface antialiased flex flex-col font-body-md overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container">
 
       {/* Header */}
       <header className="fixed top-0 left-0 w-full z-50 bg-background/90 backdrop-blur-md px-md py-sm flex items-center justify-between border-b border-outline-variant/30 max-w-lg mx-auto right-0">
         <div className="flex items-center gap-sm">
-          <Link href="/profile" aria-label="Go back to profile" className="p-xs text-on-surface hover:opacity-80 transition-opacity flex items-center">
+          <Link href={backHref} aria-label="Go back" className="p-xs text-on-surface hover:opacity-80 transition-opacity flex items-center">
             <span className="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
           </Link>
           <h1 className="font-body-lg text-body-lg font-medium text-on-surface">Settings</h1>

@@ -4,7 +4,12 @@ import { connectDB, User } from "@v-market/db";
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, password, role = "BUYER" } = await req.json();
+    let { name, email, password, role = "BUYER" } = await req.json();
+
+    // Prevent signing up as ADMIN
+    if (role === "ADMIN" || role === "admin") {
+      role = "BUYER";
+    }
 
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password are required." }, { status: 400 });

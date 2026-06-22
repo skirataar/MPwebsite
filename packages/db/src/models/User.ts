@@ -1,6 +1,7 @@
 import { Schema, model, models, Document, Types } from 'mongoose';
 
 export type UserRole = 'BUYER' | 'SELLER' | 'ADMIN';
+export type UserStatus = 'ACTIVE' | 'PENDING' | 'SUSPENDED' | 'REJECTED';
 
 export interface IUser extends Document {
   _id: Types.ObjectId;
@@ -15,6 +16,11 @@ export interface IUser extends Document {
   bio?: string;
   storeName?: string;
   onboardingComplete?: boolean;
+  gstin?: string;
+  status?: UserStatus;
+  category?: string;
+  location?: string;
+  documentIssue?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,6 +38,11 @@ const UserSchema = new Schema<IUser>(
     bio:       { type: String },
     storeName: { type: String },
     onboardingComplete: { type: Boolean, default: false },
+    gstin:     { type: String },
+    status:    { type: String, enum: ['ACTIVE', 'PENDING', 'SUSPENDED', 'REJECTED'], default: 'ACTIVE' },
+    category:  { type: String },
+    location:  { type: String },
+    documentIssue: { type: String },
   },
   { timestamps: true }
 );

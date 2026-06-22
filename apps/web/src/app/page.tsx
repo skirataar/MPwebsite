@@ -52,7 +52,7 @@ const SIDEBAR_CATEGORIES = [
 
 export default function Home() {
   const router = useRouter();
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const isSignedIn = status === "authenticated";
   const [activeVideoIdx, setActiveVideoIdx] = useState(0);
   const [cartCount, setCartCount] = useState(0);
@@ -441,6 +441,15 @@ export default function Home() {
                 Seller Dashboard
               </Link>
             )}
+            {isSignedIn && (session?.user as any)?.role === "ADMIN" && (
+              <Link 
+                href="/admin"
+                className="flex items-center gap-md text-primary font-bold hover:bg-primary/5 px-md py-sm rounded-lg font-label-xs text-label-xs transition-transform duration-300 ease-in-out hover:scale-95"
+              >
+                <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>admin_panel_settings</span>
+                Admin Panel
+              </Link>
+            )}
             <Link 
               href="/profile"
               className="flex items-center gap-md text-on-surface-variant hover:bg-surface-container px-md py-sm rounded-lg font-label-xs text-label-xs transition-transform duration-300 ease-in-out hover:scale-95"
@@ -705,13 +714,29 @@ export default function Home() {
           <span>Categories</span>
         </button>
         <Link 
-          href={isSignedIn && accountType === "seller" ? "/seller/dashboard" : "/profile"}
+          href={
+            isSignedIn && (session?.user as any)?.role === "ADMIN"
+              ? "/admin"
+              : isSignedIn && accountType === "seller"
+              ? "/seller/dashboard"
+              : "/profile"
+          }
           className="flex flex-col items-center justify-center text-secondary hover:text-primary transition-colors"
         >
           <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>
-            {isSignedIn && accountType === "seller" ? "dashboard" : "person"}
+            {isSignedIn && (session?.user as any)?.role === "ADMIN"
+              ? "admin_panel_settings"
+              : isSignedIn && accountType === "seller"
+              ? "dashboard"
+              : "person"}
           </span>
-          <span>{isSignedIn && accountType === "seller" ? "Studio" : "Account"}</span>
+          <span>
+            {isSignedIn && (session?.user as any)?.role === "ADMIN"
+              ? "Admin"
+              : isSignedIn && accountType === "seller"
+              ? "Studio"
+              : "Account"}
+          </span>
         </Link>
       </nav>
 

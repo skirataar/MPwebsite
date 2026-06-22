@@ -1,6 +1,6 @@
 import { Schema, model, models, Document, Types } from 'mongoose';
 
-export type OrderStatus = 'PENDING' | 'PAID' | 'FAILED' | 'ESCROW_RELEASED' | 'REFUNDED';
+export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED' | 'PAID' | 'FAILED' | 'ESCROW_RELEASED';
 
 export interface IOrder extends Document {
   _id: Types.ObjectId;
@@ -24,7 +24,7 @@ const OrderSchema = new Schema<IOrder>(
     sellerId:           { type: Schema.Types.ObjectId, ref: 'User',    required: true, index: true },
     amount:             { type: Number, required: true },
     quantity:           { type: Number, default: 1, min: 1 },
-    status:             { type: String, enum: ['PENDING', 'PAID', 'FAILED', 'ESCROW_RELEASED', 'REFUNDED'], default: 'PENDING', index: true },
+    status:             { type: String, enum: ['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED', 'PAID', 'FAILED', 'ESCROW_RELEASED'], default: 'PENDING', index: true },
     razorpayOrderId:    { type: String, unique: true, sparse: true },
     razorpayPaymentId:  { type: String },
     razorpaySignature:  { type: String },

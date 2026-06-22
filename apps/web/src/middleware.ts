@@ -9,13 +9,26 @@ export default withAuth(
     const isSellerRoute =
       path.startsWith("/seller/") && !path.startsWith("/seller/login");
 
+    const isAdminRoute =
+      path.startsWith("/admin");
+
     // ── Unauthenticated: send to correct login page ───────────────────────
     if (!token) {
       if (isSellerRoute) {
         return NextResponse.redirect(new URL("/seller/login", req.url));
       }
+      if (isAdminRoute) {
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
       // buyer-protected routes → handled by authorized callback + pages.signIn
       return;
+    }
+
+    // ── Authenticated: admin-specific guards ─────────────────────────────
+    if (isAdminRoute) {
+      if (token.role !== "ADMIN") {
+        return NextResponse.redirect(new URL("/", req.url));
+      }
     }
 
     // ── Authenticated: seller-specific guards ─────────────────────────────
@@ -34,6 +47,11 @@ export default withAuth(
     callbacks: {
       authorized: ({ req, token }) => {
         const path = req?.nextUrl?.pathname || "";
+
+        // Admin routes: always let through (the middleware function above handles redirects/roles)
+        if (path.startsWith("/admin")) {
+          return true;
+        }
 
         // Seller routes: always let through (the middleware function above handles auth)
         if (path.startsWith("/seller/") && !path.startsWith("/seller/login")) {
