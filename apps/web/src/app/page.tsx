@@ -5,7 +5,23 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 
-import { PRODUCTS as STATIC_VIDEOS, Product } from "../data/products";
+import { Product } from "../data/products";
+
+const PLACEHOLDER_PRODUCT: Product = {
+  id: "placeholder",
+  title: "No products available",
+  category: "all",
+  description: "There are currently no products in the store feed.",
+  price: 0,
+  seller: "V-Market",
+  username: "@vmarket",
+  location: "India",
+  likes: 0,
+  avatar: "https://ui-avatars.com/api/?name=V-Market&background=random",
+  videoBg: "https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600",
+  productThumb: "https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600",
+  dataAlt: "No products available",
+};
 import { getCartCount, addToCart, syncCartWithDatabase } from "../utils/cart";
 import { getLikes, toggleLikeProduct } from "../utils/likes";
 import AuthHeaderControls from "../components/auth-header-controls";
@@ -143,13 +159,10 @@ export default function Home() {
     fetchDbProducts();
   }, [fetchDbProducts]);
 
-  // Merge: DB products first, then static
-  const allVideos = [
-    ...dbProducts,
-    ...STATIC_VIDEOS,
-  ];
+  // Feed draws purely from the database
+  const allVideos = dbProducts;
 
-  // Sort the merged list based on active category (selected category first)
+  // Sort the list based on active category (selected category first)
   const filteredVideos = React.useMemo(() => {
     if (activeCategoryFilter === "all") {
       return allVideos;
@@ -177,9 +190,9 @@ export default function Home() {
 
   // Ensure active video index is bound to the filtered video list bounds
   const getActiveVideo = () => {
-    if (filteredVideos.length === 0) return STATIC_VIDEOS[0]; // fallback
+    if (filteredVideos.length === 0) return PLACEHOLDER_PRODUCT;
     const video = filteredVideos[activeVideoIdx % filteredVideos.length];
-    return video || filteredVideos[0];
+    return video || filteredVideos[0] || PLACEHOLDER_PRODUCT;
   };
 
   const activeVideo = getActiveVideo();

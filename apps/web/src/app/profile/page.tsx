@@ -3,47 +3,42 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PRODUCTS, Product } from "../../data/products";
+import { Product } from "../../data/products";
 import { getLikes, toggleLikeProduct } from "../../utils/likes";
 
 import { useSession } from "next-auth/react";
 
-const MOCK_SELLER_PRODUCTS: Product[] = [
-  {
-    id: 101,
-    title: "Terracotta Tea Kulhads (Set of 6)",
-    category: "handmade",
-    description: "Authentic mud kulhads double fired for premium aroma and earthy tea experience.",
-    price: 380,
-    seller: "Dev Artisan",
-    username: "@devartisan",
-    location: "Kolkata, India",
-    likes: 85,
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150",
-    videoBg: "https://lh3.googleusercontent.com/aida-public/AB6AXuB3fuGRbIJWE_Xw_-QGxSkObMts6gXq_tQCEatfJ3GAH4n-LzWpdYfUkFeiYIgyiNqeAxvtONdgP_O8eGfoayxqFr_V9_AQ6mbs0sNNX3UG-DOHkQLKBsTM49F-XVu3fACsaOEqttQM1bC7VBXKQNANwKRwUOE_Jtnk_fEzuev821yrCpNa_SjsJUHGmCnq_KXECZzYmBYzNyhcqgPvNkKjcqBCjCVRam8GIq5vUXU_Jp9icO0lkeG7j17mCRHYuBs9XK5XP0fMmEMa",
-    productThumb: "https://lh3.googleusercontent.com/aida-public/AB6AXuB3fuGRbIJWE_Xw_-QGxSkObMts6gXq_tQCEatfJ3GAH4n-LzWpdYfUkFeiYIgyiNqeAxvtONdgP_O8eGfoayxqFr_V9_AQ6mbs0sNNX3UG-DOHkQLKBsTM49F-XVu3fACsaOEqttQM1bC7VBXKQNANwKRwUOE_Jtnk_fEzuev821yrCpNa_SjsJUHGmCnq_KXECZzYmBYzNyhcqgPvNkKjcqBCjCVRam8GIq5vUXU_Jp9icO0lkeG7j17mCRHYuBs9XK5XP0fMmEMa",
-    dataAlt: "Traditional mud kulhad set."
-  },
-  {
-    id: 102,
-    title: "Handmade Organic Linen Hand Towels",
-    category: "fashion",
-    description: "Premium pure linen napkins, super absorbent, soft skin-friendly textures.",
-    price: 799,
-    seller: "Dev Artisan",
-    username: "@devartisan",
-    location: "Kolkata, India",
-    likes: 124,
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150",
-    videoBg: "https://lh3.googleusercontent.com/aida-public/AB6AXuCwb_xHRjb0aQTDbRLAS2av8GgVZKmDFhXj19dloFD7On4gdrFSTaHt5P60piRfi3G85fWZxVlP-B9oFSjny7UCgZ1atqwCGbGz_WdP_8jjkbY1e2Z6HhVpW25CoSMhg9S0-zIg8tK9ruOBPO5_xK0UKWmeJ35kVMJMSPom_40Mz0XGomWvdi1RBOuAPgJ8Vh4xFM8kipOgN-a21MsjowoKnXLKpVIE4mD-Oi1OuN_1KKgIcVpSazQMehFVz4zxKB8htq7TkdmXstsh",
-    productThumb: "https://lh3.googleusercontent.com/aida-public/AB6AXuCXpDM-4AY5Rnz3IKeYtmhRLtS74oqkq5jyt4D_xhgXg7LyEsa95d0HDqz46nbdndRtF4mZJowoKYxsp8YuZw5WmUiAOTQXbM38eoJfOBb3Jq1BvNXQQhpy33XLuahOvTi7uQwxqrt8GJDJ3TdyK0zjgo7vLJ3zQDBjZJZ_qbT0zvrebR3T3sw9EUqwF_GDtTOa7Vwp6LryVJPmeX6gvz0pvrmEx7nxpPZHTy3KvDEmtlnhV6pwyODpflzL67OcLWJCrh0Ztr44pJnL",
-    dataAlt: "Neatly folded linen towels."
-  }
-];
+// Adapt a DB product to the feed's Product shape
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function dbToFeedProduct(p: any): Product {
+  return {
+    id: p._id,
+    title: p.title,
+    category: p.category,
+    description: p.description,
+    price: p.price,
+    originalPrice: p.mrp,
+    seller: p.sellerId?.name || "Artisan",
+    username: `@${p.sellerId?.username || "artisan"}`,
+    location: p.sellerId?.location || "India",
+    likes: p.likesCount ?? 0,
+    avatar: p.sellerId?.avatarUrl || "https://ui-avatars.com/api/?name=Artisan&background=random",
+    videoBg: p.imageUrl,
+    videoUrl: p.videoUrl || undefined,
+    productThumb: p.imageUrl,
+    dataAlt: p.title,
+    stockLeft: p.stock,
+    rating: 4.8,
+    reviewsCount: 0,
+    viewsCount: `${p.viewsCount ?? 0} views`,
+    freeDelivery: true,
+  };
+}
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const [likedProducts, setLikedProducts] = useState<Product[]>([]);
+  const [sellerProducts, setSellerProducts] = useState<Product[]>([]);
   const [activeTab, setActiveTab] = useState("liked");
   const [isMounted, setIsMounted] = useState(false);
   const [accountType, setAccountType] = useState("customer");
@@ -86,21 +81,37 @@ export default function ProfilePage() {
       document.documentElement.classList.remove("dark");
     }
 
-    const loadData = () => {
+    const loadData = async () => {
       // Sync Likes
       const likedIds = getLikes();
-      const filtered = PRODUCTS.filter((p) => likedIds.includes(p.id));
-      setLikedProducts(filtered);
+      try {
+        const res = await fetch("/api/products?limit=100");
+        if (res.ok) {
+          const data = await res.json();
+          const adapted: Product[] = (data.products ?? []).map(dbToFeedProduct);
+          
+          const filteredLikes = adapted.filter((p) => likedIds.includes(p.id));
+          setLikedProducts(filteredLikes);
+
+          const currentUsername = session?.user?.email ? `@${session.user.email.split("@")[0]}` : "@user";
+          const filteredSeller = adapted.filter((p) => p.username === currentUsername || p.seller === session?.user?.name);
+          setSellerProducts(filteredSeller);
+        }
+      } catch (err) {
+        console.error("Failed to load products for profile view", err);
+      }
     };
 
-    loadData();
+    if (status === "authenticated") {
+      loadData();
+    }
 
     window.addEventListener("likes-updated", loadData);
 
     return () => {
       window.removeEventListener("likes-updated", loadData);
     };
-  }, []);
+  }, [status, session]);
 
   const handleUnlike = (productId: number, e: React.MouseEvent) => {
     e.preventDefault();
@@ -198,7 +209,7 @@ export default function ProfilePage() {
               <div className="w-[1px] h-6 bg-outline-variant/30"></div>
               <div className="flex flex-col">
                 <span className="font-price-md text-price-md font-bold text-on-surface">
-                  {accountType === "seller" ? MOCK_SELLER_PRODUCTS.length : 0}
+                  {accountType === "seller" ? sellerProducts.length : 0}
                 </span>
                 <span className="font-label-xs text-[10px] text-on-surface-variant uppercase tracking-wider">
                   Items
@@ -330,42 +341,48 @@ export default function ProfilePage() {
                   </Link>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-md">
-                  {MOCK_SELLER_PRODUCTS.map((product) => (
-                    <div 
-                      key={product.id}
-                      className="group flex flex-col bg-surface rounded-xl border-[0.5px] border-outline-variant overflow-hidden hover:shadow-md transition-shadow relative"
-                    >
-                      <div className="aspect-[3/4] bg-surface-variant overflow-hidden relative">
-                        <img 
-                          alt={product.title} 
-                          className="w-full h-full object-cover"
-                          src={product.productThumb}
-                        />
-                      </div>
-                      <div className="p-sm flex flex-col gap-xs min-h-[92px] justify-between">
-                        <div className="flex flex-col">
-                          <span className="font-body-sm text-[13px] font-semibold text-on-surface line-clamp-1 leading-tight">
-                            {product.title}
-                          </span>
-                          <span className="font-label-xs text-[10px] text-on-surface-variant mt-0.5">
-                            {product.location}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between mt-xs border-t border-outline-variant/10 pt-xs">
-                          <span className="font-price-md text-price-md text-primary font-bold">
-                            ₹{product.price.toLocaleString()}
-                          </span>
-                          <button 
-                            onClick={() => alert("Edit product details drawer...")}
-                            className="p-xs text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center active:scale-90"
-                            aria-label="Edit craft"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">edit</span>
-                          </button>
-                        </div>
-                      </div>
+                  {sellerProducts.length === 0 ? (
+                    <div className="col-span-full py-xl text-center italic text-on-surface-variant font-body-sm">
+                      You haven't listed any crafts yet.
                     </div>
-                  ))}
+                  ) : (
+                    sellerProducts.map((product) => (
+                      <div 
+                        key={product.id}
+                        className="group flex flex-col bg-surface rounded-xl border-[0.5px] border-outline-variant overflow-hidden hover:shadow-md transition-shadow relative"
+                      >
+                        <div className="aspect-[3/4] bg-surface-variant overflow-hidden relative">
+                          <img 
+                            alt={product.title} 
+                            className="w-full h-full object-cover"
+                            src={product.productThumb}
+                          />
+                        </div>
+                        <div className="p-sm flex flex-col gap-xs min-h-[92px] justify-between">
+                          <div className="flex flex-col">
+                            <span className="font-body-sm text-[13px] font-semibold text-on-surface line-clamp-1 leading-tight">
+                              {product.title}
+                            </span>
+                            <span className="font-label-xs text-[10px] text-on-surface-variant mt-0.5">
+                              {product.location}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between mt-xs border-t border-outline-variant/10 pt-xs">
+                            <span className="font-price-md text-price-md text-primary font-bold">
+                              ₹{product.price.toLocaleString()}
+                            </span>
+                            <button 
+                              onClick={() => alert("Edit product details drawer...")}
+                              className="p-xs text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center active:scale-90"
+                              aria-label="Edit craft"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">edit</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             ) : (

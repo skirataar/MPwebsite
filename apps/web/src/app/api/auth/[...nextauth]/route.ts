@@ -22,12 +22,12 @@ export const authOptions: AuthOptions = {
         if (!credentials?.email || !credentials?.password) return null;
         await connectDB();
 
-        // Ensure database is seeded with admin credentials on first auth attempt
+        // Ensure database has default admin credentials on first auth attempt
         try {
-          const { seedDB } = require("@/utils/seed");
-          await seedDB();
+          const { ensureAdminUser } = require("@/utils/ensure-admin");
+          await ensureAdminUser();
         } catch (e) {
-          console.error("Auto-seeding from credentials authorize failed:", e);
+          console.error("Auto-provisioning admin from credentials authorize failed:", e);
         }
         
         const user = await User.findOne({ email: credentials.email });
