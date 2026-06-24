@@ -3,6 +3,7 @@
 import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { syncCartWithDatabase } from "../../utils/cart";
 
 function AuthSyncContent() {
   const router = useRouter();
@@ -41,10 +42,11 @@ function AuthSyncContent() {
         }
         window.dispatchEvent(new Event("login-updated"));
         window.dispatchEvent(new Event("account-type-updated"));
+        await syncCartWithDatabase();
       } catch (error) {
         console.error("Failed to sync user:", error);
       } finally {
-        router.push(redirect);
+        window.location.href = redirect;
       }
     };
 

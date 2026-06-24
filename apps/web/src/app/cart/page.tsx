@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getCart, updateCartItemQuantity, removeFromCart, CartItem } from "../../utils/cart";
+import { getCart, updateCartItemQuantity, removeFromCart, CartItem, syncCartWithDatabase } from "../../utils/cart";
 
 export default function CartPage() {
   const router = useRouter();
@@ -24,6 +24,7 @@ export default function CartPage() {
 
     // Load dynamic cart items on client mount
     setCartItems(getCart());
+    syncCartWithDatabase();
 
     const syncCart = () => {
       setCartItems(getCart());

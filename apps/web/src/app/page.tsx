@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 
 import { PRODUCTS as STATIC_VIDEOS, Product } from "../data/products";
-import { getCartCount, addToCart } from "../utils/cart";
+import { getCartCount, addToCart, syncCartWithDatabase } from "../utils/cart";
 import { getLikes, toggleLikeProduct } from "../utils/likes";
 import AuthHeaderControls from "../components/auth-header-controls";
 
@@ -59,6 +59,14 @@ export default function Home() {
 
   const [accountType, setAccountType] = useState("customer");
 
+  // Sync account type reactively from session role
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      const derivedRole = (session.user as any).role?.toLowerCase();
+      setAccountType(derivedRole === "seller" ? "seller" : "customer");
+    }
+  }, [status, session]);
+
   useEffect(() => {
     const theme = localStorage.getItem("theme");
     const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -79,9 +87,7 @@ export default function Home() {
   useEffect(() => {
     // Initial load from localStorage
     setCartCount(getCartCount());
-
-    const roleVal = localStorage.getItem("v-market-account-type") || "customer";
-    setAccountType(roleVal);
+    syncCartWithDatabase();
 
     // Sync likes on mount
     const initialLikes = getLikes();
@@ -105,18 +111,11 @@ export default function Home() {
       setLikedVideos(newMap);
     };
 
-    const syncAccount = () => {
-      const currentVal = localStorage.getItem("v-market-account-type") || "customer";
-      setAccountType(currentVal);
-    };
-
     window.addEventListener("cart-updated", syncCart);
     window.addEventListener("likes-updated", syncLikes);
-    window.addEventListener("account-type-updated", syncAccount);
     return () => {
       window.removeEventListener("cart-updated", syncCart);
       window.removeEventListener("likes-updated", syncLikes);
-      window.removeEventListener("account-type-updated", syncAccount);
     };
   }, []);
   const [likedVideos, setLikedVideos] = useState<Record<string | number, boolean>>({});

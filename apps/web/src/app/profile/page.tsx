@@ -49,6 +49,14 @@ export default function ProfilePage() {
   const [accountType, setAccountType] = useState("customer");
   const [ordersCount, setOrdersCount] = useState(0);
 
+  // Sync account type reactively from session role
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      const derivedRole = (session.user as any).role?.toLowerCase();
+      setAccountType(derivedRole === "seller" ? "seller" : "customer");
+    }
+  }, [status, session]);
+
   useEffect(() => {
     const fetchOrders = async () => {
       try {
@@ -79,10 +87,6 @@ export default function ProfilePage() {
     }
 
     const loadData = () => {
-      // Sync Account Type
-      const typeVal = localStorage.getItem("v-market-account-type") || "customer";
-      setAccountType(typeVal);
-
       // Sync Likes
       const likedIds = getLikes();
       const filtered = PRODUCTS.filter((p) => likedIds.includes(p.id));
@@ -92,11 +96,9 @@ export default function ProfilePage() {
     loadData();
 
     window.addEventListener("likes-updated", loadData);
-    window.addEventListener("account-type-updated", loadData);
 
     return () => {
       window.removeEventListener("likes-updated", loadData);
-      window.removeEventListener("account-type-updated", loadData);
     };
   }, []);
 

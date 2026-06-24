@@ -49,8 +49,10 @@ export default function SettingsPage() {
   const handleLogOut = async () => {
     localStorage.setItem("v-market-logged-in", "false");
     localStorage.removeItem("v-market-account-type");
+    localStorage.removeItem("v-market-cart");
     window.dispatchEvent(new Event("login-updated"));
     window.dispatchEvent(new Event("account-type-updated"));
+    window.dispatchEvent(new Event("cart-updated"));
     await signOut();
     router.push("/");
   };

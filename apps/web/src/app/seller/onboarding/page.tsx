@@ -23,7 +23,9 @@ export default function SellerOnboardingPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("[onboarding client] Form submitted. storeName:", storeName, "phone:", phone);
     if (!storeName || !phone) {
+      console.warn("[onboarding client] Validation failed: missing storeName or phone");
       setError("Please fill out all required fields.");
       return;
     }
@@ -32,24 +34,33 @@ export default function SellerOnboardingPage() {
     setError(null);
 
     try {
+      console.log("[onboarding client] Fetching /api/seller/onboarding...");
       const res = await fetch("/api/seller/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ storeName, phone, bio }),
       });
 
+      console.log("[onboarding client] Fetch status:", res.status);
       if (!res.ok) {
         const data = await res.json();
+        console.error("[onboarding client] API error response:", data);
         throw new Error(data.error || "Failed to save details");
       }
 
+      const responseData = await res.json();
+      console.log("[onboarding client] API success response:", responseData);
+
+      console.log("[onboarding client] Calling next-auth session update...");
       // Update the client-side session to reflect onboarding is complete
-      await update({ onboardingComplete: true });
+      const sessionUpdateResult = await update({ onboardingComplete: true });
+      console.log("[onboarding client] Session update completed. Result:", sessionUpdateResult);
       
-      // Redirect to dashboard
-      router.push("/seller/dashboard");
-      router.refresh(); // Force refresh to update layouts
+      console.log("[onboarding client] Redirecting to /seller/dashboard via hard page load...");
+      // Use hard location redirect to avoid Next.js router cache / middleware race conditions
+      window.location.href = "/seller/dashboard";
     } catch (err: any) {
+      console.error("[onboarding client] Error caught in handleSubmit:", err);
       setError(err.message);
     } finally {
       setIsSubmitting(false);

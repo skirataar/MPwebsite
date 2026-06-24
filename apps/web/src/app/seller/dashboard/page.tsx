@@ -561,8 +561,10 @@ export default function SellerDashboard() {
 
   const handleLogOut = async () => {
     localStorage.removeItem("v-market-account-type");
+    localStorage.removeItem("v-market-cart");
     localStorage.setItem("v-market-logged-in", "false");
     window.dispatchEvent(new Event("login-updated"));
+    window.dispatchEvent(new Event("cart-updated"));
     await signOut();
     router.push("/seller/login");
   };
