@@ -17,7 +17,6 @@ if (!uri) {
       } else {
         throw err;
       }
-      return Promise.reject(err);
     }
   } as unknown as Promise<MongoClient>;
 } else {
