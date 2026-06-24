@@ -8,7 +8,18 @@ let clientPromise: Promise<MongoClient>;
 
 if (!uri) {
   console.warn("Please add your Mongo URI to .env.local as DATABASE_URL or MONGODB_URI");
-  clientPromise = Promise.reject(new Error("Missing Mongo URI in environment variables."));
+  // Use a lazy Thenable to prevent eager unhandled promise rejections at module load time (e.g. during next build)
+  clientPromise = {
+    then(onFulfilled, onRejected) {
+      const err = new Error("Missing Mongo URI in environment variables.");
+      if (onRejected) {
+        onRejected(err);
+      } else {
+        throw err;
+      }
+      return Promise.reject(err);
+    }
+  } as unknown as Promise<MongoClient>;
 } else {
   declare global {
     var _mongoClientPromise: Promise<MongoClient> | undefined;
@@ -23,6 +34,11 @@ if (!uri) {
   } else {
     client = new MongoClient(uri, options);
     clientPromise = client.connect();
+    // Catch connection errors at module level to prevent crashing the build process
+    // if the database is not accessible during the build phase.
+    clientPromise.catch((err) => {
+      console.error("[mongodb] Production connection failed:", err.message);
+    });
   }
 }
 
