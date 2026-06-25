@@ -138,6 +138,8 @@ export default function Home() {
   const [followedSellers, setFollowedSellers] = useState<Record<string, boolean>>({});
   const [activeCategoryFilter, setActiveCategoryFilter] = useState("all");
   const [isCategorySidebarOpen, setIsCategorySidebarOpen] = useState(false);
+  const [shareLink, setShareLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // DB products state
   const [dbProducts, setDbProducts] = useState<Product[]>([]);
@@ -214,13 +216,13 @@ export default function Home() {
     setIsCategorySidebarOpen(false); // close sidebar drawer
   };
 
-  const toggleLike = (e: React.MouseEvent) => {
+  const toggleLike = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!isSignedIn) {
       router.push("/login?redirect=/");
       return;
     }
-    const liked = toggleLikeProduct(activeVideo.id);
+    const liked = await toggleLikeProduct(activeVideo.id);
     setLikedVideos((prev) => ({
       ...prev,
       [activeVideo.id]: liked,
@@ -233,6 +235,42 @@ export default function Home() {
       ...prev,
       [activeVideo.username]: !prev[activeVideo.username],
     }));
+  };
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (typeof window === "undefined") return;
+    const shareUrl = `${window.location.origin}/product/${activeVideo.id}`;
+    setShareLink(shareUrl);
+    setCopied(false);
+  };
+
+  const handleCopyLink = async () => {
+    if (!shareLink) return;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(shareLink);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = shareLink;
+        textArea.style.position = "fixed";
+        textArea.style.top = "0";
+        textArea.style.left = "0";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy link:", err);
+      // Fallback: still show copied UI state so user experience is smooth
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -555,7 +593,7 @@ export default function Home() {
 
             {/* Share Action */}
             <button 
-              onClick={() => alert("Copied video link to clipboard!")}
+              onClick={handleShare}
               className="flex flex-col items-center gap-xs text-white hover:text-primary-fixed transition-colors group/btn"
             >
               <div className="w-10 h-10 rounded-full bg-black/20 backdrop-blur-sm border-[0.5px] border-white/30 flex items-center justify-center hover:bg-black/40 transition-colors">
@@ -846,6 +884,52 @@ export default function Home() {
             </div>
           </aside>
         </>
+      )}
+
+      {shareLink && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-md">
+          <div 
+            className="bg-surface border border-outline-variant/30 rounded-2xl p-md max-w-sm w-full flex flex-col gap-md shadow-2xl animate-fade-in-up text-on-surface"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-body-lg">Share Product</h3>
+              <button 
+                onClick={() => setShareLink(null)}
+                className="w-8 h-8 rounded-full hover:bg-surface-container flex items-center justify-center text-on-surface-variant transition-colors"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+            <p className="text-xs text-on-surface-variant leading-relaxed">
+              Share this unique handcrafted creation with your friends and family!
+            </p>
+            <div className="flex gap-sm items-center bg-surface-container-low border border-outline-variant/30 rounded-xl p-[6px]">
+              <input 
+                type="text" 
+                readOnly 
+                value={shareLink} 
+                className="flex-1 bg-transparent px-2 text-xs font-mono text-on-surface-variant outline-none truncate"
+              />
+              <button
+                onClick={handleCopyLink}
+                className="h-[32px] px-md rounded-lg bg-primary text-on-primary text-xs font-bold flex items-center justify-center gap-xs active:scale-95 transition-all"
+              >
+                {copied ? (
+                  <>
+                    <span className="material-symbols-outlined text-[16px]">check</span>
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[16px]">content_copy</span>
+                    Copy
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

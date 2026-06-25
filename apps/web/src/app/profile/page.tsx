@@ -113,10 +113,10 @@ export default function ProfilePage() {
     };
   }, [status, session]);
 
-  const handleUnlike = (productId: number, e: React.MouseEvent) => {
+  const handleUnlike = async (productId: number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    toggleLikeProduct(productId);
+    await toggleLikeProduct(productId);
   };
 
   if (!isMounted || status === "loading") {
