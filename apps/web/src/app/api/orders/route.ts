@@ -2,54 +2,16 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route";
 import { connectDB, Product, User, Order } from '@v-market/db';
 import { NextRequest, NextResponse } from 'next/server';
-import { PRODUCTS } from "../../../data/products";
 
 /**
- * Helper to resolve a product from either a database ObjectId or a static numeric ID.
- * If it's a static ID, it creates the product in MongoDB on-the-fly so it can be ordered.
+ * Helper to resolve a product from a database ObjectId.
  */
 async function resolveDbProduct(idOrString: string) {
   const isObjectId = /^[0-9a-fA-F]{24}$/.test(idOrString);
   if (isObjectId) {
     return await Product.findById(idOrString);
   }
-
-  // Find in static products
-  const staticProduct = PRODUCTS.find(p => String(p.id) === idOrString);
-  if (!staticProduct) return null;
-
-  // Check if it already exists in MongoDB
-  let dbProduct = await Product.findOne({ title: staticProduct.title });
-  if (dbProduct) return dbProduct;
-
-  // Ensure there's a seller in MongoDB for this static product
-  const sellerEmail = `${staticProduct.username.replace('@', '').toLowerCase()}@vmarket.com`;
-  let seller = await User.findOne({ email: sellerEmail });
-  if (!seller) {
-    seller = await User.create({
-      name: staticProduct.seller,
-      email: sellerEmail,
-      username: staticProduct.username.replace('@', '').toLowerCase(),
-      role: 'SELLER',
-      avatarUrl: staticProduct.avatar,
-    });
-  }
-
-  // Create the product in MongoDB
-  dbProduct = await Product.create({
-    title: staticProduct.title,
-    description: staticProduct.description,
-    price: staticProduct.price,
-    mrp: staticProduct.originalPrice,
-    stock: staticProduct.stockLeft || 10,
-    category: staticProduct.category,
-    imageUrl: staticProduct.videoBg || staticProduct.productThumb,
-    videoUrl: staticProduct.videoUrl,
-    status: 'LIVE',
-    sellerId: seller._id,
-  });
-
-  return dbProduct;
+  return null;
 }
 
 /**

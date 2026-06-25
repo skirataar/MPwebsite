@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { PRODUCTS, Product } from "../../../data/products";
+import { Product } from "../../../data/products";
 import { addToCart, getCartCount } from "../../../utils/cart";
 import { isProductLiked, toggleLikeProduct } from "../../../utils/likes";
 
@@ -67,15 +67,6 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const isStaticId = typeof params?.id === "string" && /^\d+$/.test(params.id);
-    const staticProduct = isStaticId ? PRODUCTS.find((p) => String(p.id) === params.id) : null;
-
-    if (staticProduct) {
-      setProduct(staticProduct);
-      setLoading(false);
-      return;
-    }
-
     const fetchProduct = async () => {
       try {
         setLoading(true);
