@@ -198,7 +198,7 @@ export default function ProfilePage() {
                 </span>
               </div>
               <div className="w-[1px] h-6 bg-outline-variant/30"></div>
-              <Link href="/orders" className="flex flex-col hover:opacity-80 transition-opacity cursor-pointer">
+              <Link href="/orders?from=profile" className="flex flex-col hover:opacity-80 transition-opacity cursor-pointer">
                 <span className="font-price-md text-price-md font-bold text-on-surface">
                   {ordersCount}
                 </span>

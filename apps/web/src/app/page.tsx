@@ -451,7 +451,9 @@ export default function Home() {
               </span>
             )}
           </Link>
-          <AuthHeaderControls />
+          <div className="hidden md:block">
+            <AuthHeaderControls />
+          </div>
         </div>
       </header>
 
@@ -764,29 +766,29 @@ export default function Home() {
           <span>Categories</span>
         </button>
         <Link 
-          href={
-            isSignedIn && (session?.user as any)?.role === "ADMIN"
-              ? "/admin"
-              : isSignedIn && accountType === "seller"
-              ? "/seller/dashboard"
-              : "/profile"
-          }
+          href="/profile"
+          className="flex flex-col items-center justify-center text-secondary hover:text-primary transition-colors gap-[2px]"
+        >
+          {isSignedIn && session?.user?.image ? (
+            <div className="w-[24px] h-[24px] rounded-full overflow-hidden border border-outline-variant/30 flex items-center justify-center">
+              <img 
+                src={session.user.image} 
+                alt="Profile" 
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          ) : (
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>person</span>
+          )}
+          <span>Profile</span>
+        </Link>
+        <Link 
+          href={isSignedIn ? "/orders" : "/login?redirect=/orders"}
           className="flex flex-col items-center justify-center text-secondary hover:text-primary transition-colors"
         >
-          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>
-            {isSignedIn && (session?.user as any)?.role === "ADMIN"
-              ? "admin_panel_settings"
-              : isSignedIn && accountType === "seller"
-              ? "dashboard"
-              : "person"}
-          </span>
-          <span>
-            {isSignedIn && (session?.user as any)?.role === "ADMIN"
-              ? "Admin"
-              : isSignedIn && accountType === "seller"
-              ? "Studio"
-              : "Account"}
-          </span>
+          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>receipt_long</span>
+          <span>Orders</span>
         </Link>
       </nav>
 
@@ -878,6 +880,26 @@ export default function Home() {
                   >
                     <span className="material-symbols-outlined mr-sm text-[18px]">receipt_long</span>
                     <span className="font-body-sm text-body-sm">My orders</span>
+                  </Link>
+                </li>
+                <li className="stagger-item" style={{ animationDelay: "650ms" }}>
+                  <Link 
+                    href="/faq"
+                    onClick={() => setIsCategorySidebarOpen(false)}
+                    className="flex items-center h-[48px] px-md text-on-surface hover:bg-surface-container-low transition-colors border-t border-outline-variant/10" 
+                  >
+                    <span className="material-symbols-outlined mr-sm text-[18px]">help</span>
+                    <span className="font-body-sm text-body-sm">FAQ & Help</span>
+                  </Link>
+                </li>
+                <li className="stagger-item" style={{ animationDelay: "700ms" }}>
+                  <Link 
+                    href="/contact"
+                    onClick={() => setIsCategorySidebarOpen(false)}
+                    className="flex items-center h-[48px] px-md text-on-surface hover:bg-surface-container-low transition-colors" 
+                  >
+                    <span className="material-symbols-outlined mr-sm text-[18px]">mail</span>
+                    <span className="font-body-sm text-body-sm">Contact us</span>
                   </Link>
                 </li>
               </ul>

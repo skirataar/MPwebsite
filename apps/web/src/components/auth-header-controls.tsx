@@ -28,7 +28,7 @@ export default function AuthHeaderControls() {
           </Link>
         </>
       ) : (
-        <Link href="/settings" className="block w-9 h-9 rounded-full overflow-hidden border-[1.5px] border-primary/20 hover:border-primary transition-colors cursor-pointer">
+        <Link href="/profile" className="block w-9 h-9 rounded-full overflow-hidden border-[1.5px] border-primary/20 hover:border-primary transition-colors cursor-pointer">
           <img 
             src={session?.user?.image || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150"} 
             alt="Profile" 

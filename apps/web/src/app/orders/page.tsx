@@ -30,6 +30,7 @@ export default function MyOrdersPage() {
   const [orders, setOrders] = useState<DBOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDark, setIsDark] = useState(false);
+  const [backHref, setBackHref] = useState("/");
 
   useEffect(() => {
     // Sync theme
@@ -41,6 +42,16 @@ export default function MyOrdersPage() {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
+    }
+
+    // Parse back URL safely on client-side
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("from") === "profile") {
+        setBackHref("/profile");
+      } else {
+        setBackHref("/");
+      }
     }
 
     if (status === "unauthenticated") {
@@ -95,30 +106,10 @@ export default function MyOrdersPage() {
       {/* Header */}
       <header className="fixed top-0 left-0 w-full z-50 bg-background/90 backdrop-blur-md px-md py-sm flex items-center justify-between border-b border-outline-variant/30 max-w-lg mx-auto right-0">
         <div className="flex items-center gap-sm">
-          <Link href="/profile" aria-label="Go back" className="p-xs text-on-surface hover:opacity-80 transition-opacity flex items-center">
+          <Link href={backHref} aria-label="Go back" className="p-xs text-on-surface hover:opacity-80 transition-opacity flex items-center">
             <span className="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
           </Link>
           <h1 className="font-body-lg text-body-lg font-medium text-on-surface">My Orders</h1>
-        </div>
-        <div className="flex items-center gap-md">
-          {/* Dark Mode toggle button */}
-          <button 
-            onClick={toggleTheme}
-            className="p-xs text-on-surface hover:opacity-80 transition-opacity flex items-center justify-center"
-            aria-label="Toggle dark mode"
-          >
-            <span className="material-symbols-outlined" style={{ fontVariationSettings: isDark ? "'FILL' 1" : "'FILL' 0" }}>
-              {isDark ? "light_mode" : "dark_mode"}
-            </span>
-          </button>
-
-          <button 
-            onClick={() => alert("For support regarding your orders, please contact support@vmarket.in")}
-            aria-label="Support" 
-            className="p-xs text-on-surface hover:opacity-80 transition-opacity"
-          >
-            <span className="material-symbols-outlined" data-icon="support_agent">support_agent</span>
-          </button>
         </div>
       </header>
 
