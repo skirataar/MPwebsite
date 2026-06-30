@@ -6,13 +6,29 @@ import Link from "next/link";
 import { Product } from "../../../data/products";
 import { addToCart, getCartCount } from "../../../utils/cart";
 import { isProductLiked, toggleLikeProduct } from "../../../utils/likes";
+import { isProductInWishlist, toggleWishlistProduct } from "../../../utils/wishlist";
+import { useSession } from "next-auth/react";
 
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { data: session, status } = useSession();
+  
+  interface ReviewData {
+    _id: string;
+    userId: {
+      _id: string;
+      name: string;
+      avatarUrl?: string;
+    } | null;
+    rating: number;
+    comment: string;
+    createdAt: string;
+  }
   
   // React state hooks at top-level
   const [isLiked, setIsLiked] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [isDark, setIsDark] = useState(false);
@@ -25,6 +41,15 @@ export default function ProductDetailPage() {
   const [scrolled, setScrolled] = useState(false);
   const [shareLink, setShareLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Review System State
+  const [reviews, setReviews] = useState<ReviewData[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [newRating, setNewRating] = useState(5);
+  const [newComment, setNewComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   // Sync theme and header scroll states
   useEffect(() => {
@@ -137,6 +162,97 @@ export default function ProductDetailPage() {
     }
   }, [params?.id]);
 
+  const fetchReviews = async () => {
+    try {
+      setReviewsLoading(true);
+      const res = await fetch(`/api/products/${params?.id}/reviews`);
+      if (res.ok) {
+        const data = await res.json();
+        setReviews(data.reviews || []);
+      }
+    } catch (err) {
+      console.error("Error fetching reviews:", err);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (params?.id) {
+      fetchReviews();
+    }
+  }, [params?.id]);
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitError(null);
+    setSubmitSuccess(false);
+
+    if (!newComment.trim()) {
+      setSubmitError("Please write a comment.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const res = await fetch(`/api/products/${params?.id}/reviews`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          rating: newRating,
+          comment: newComment,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setSubmitError(data.error || "Failed to submit review.");
+        return;
+      }
+
+      setSubmitSuccess(true);
+      setNewComment("");
+      setNewRating(5);
+      await fetchReviews();
+    } catch (err) {
+      console.error("Failed to submit review:", err);
+      setSubmitError("An error occurred. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Dynamically calculate average rating and reviews count
+  const reviewsCount = reviews.length;
+  const averageRating = reviewsCount > 0
+    ? parseFloat((reviews.reduce((sum, r) => sum + r.rating, 0) / reviewsCount).toFixed(1))
+    : 5.0; // default to 5.0
+
+  const renderStars = (rating: number, size = 20) => {
+    return Array.from({ length: 5 }).map((_, idx) => {
+      const starVal = idx + 1;
+      let fill = "0";
+      let name = "star";
+      if (rating >= starVal) {
+        fill = "1";
+      } else if (rating > starVal - 1) {
+        name = "star_half";
+        fill = "1";
+      }
+      return (
+        <span
+          key={idx}
+          className="material-symbols-outlined"
+          style={{ fontSize: `${size}px`, fontVariationSettings: `'FILL' ${fill}` }}
+        >
+          {name}
+        </span>
+      );
+    });
+  };
+
   // Sync likes
   useEffect(() => {
     if (product) {
@@ -154,6 +270,34 @@ export default function ProductDetailPage() {
       window.removeEventListener("likes-updated", syncLikes);
     };
   }, [product]);
+
+  // Sync wishlist
+  useEffect(() => {
+    if (product) {
+      setIsWishlisted(isProductInWishlist(product.id));
+    }
+
+    const syncWishlist = () => {
+      if (product) {
+        setIsWishlisted(isProductInWishlist(product.id));
+      }
+    };
+
+    window.addEventListener("wishlist-updated", syncWishlist);
+    return () => {
+      window.removeEventListener("wishlist-updated", syncWishlist);
+    };
+  }, [product]);
+
+  const handleToggleWishlist = async () => {
+    if (!product) return;
+    if (!isLoggedIn) {
+      router.push(`/login?redirect=/product/${product.id}`);
+      return;
+    }
+    const wishlisted = await toggleWishlistProduct(product.id);
+    setIsWishlisted(wishlisted);
+  };
 
   if (loading) {
     return (
@@ -444,14 +588,10 @@ export default function ProductDetailPage() {
               {/* Rating Section */}
               <div className="flex items-center gap-xs mt-xs">
                 <div className="flex items-center text-amber-500">
-                  <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                  <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                  <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                  <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                  <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>star_half</span>
+                  {renderStars(averageRating, 20)}
                 </div>
-                <span className="font-bold text-body-sm text-on-surface ml-1">{product.rating || "4.8"}</span>
-                <span className="text-on-surface-variant/70 text-xs">({product.reviewsCount || 12} customer reviews)</span>
+                <span className="font-bold text-body-sm text-on-surface ml-1">{averageRating}</span>
+                <span className="text-on-surface-variant/70 text-xs">({reviewsCount} customer reviews)</span>
               </div>
 
               {/* Pricing section */}
@@ -494,12 +634,27 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Desktop Action Buttons */}
-            <div className="hidden md:flex gap-md bg-transparent">
+            <div className="hidden md:flex gap-md bg-transparent items-center">
+              <button
+                onClick={handleToggleWishlist}
+                className={`w-[48px] h-[48px] shrink-0 rounded-xl border flex items-center justify-center active:scale-98 transition-all ${
+                  isWishlisted 
+                    ? "bg-rose-500/10 text-rose-500 border-rose-500/30" 
+                    : "border-outline hover:bg-surface-container-highest/20 text-on-surface-variant"
+                }`}
+                aria-label="Wishlist"
+                title={isWishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
+              >
+                <span className="material-symbols-outlined" style={{ fontVariationSettings: isWishlisted ? "'FILL' 1" : "'FILL' 0" }}>
+                  favorite
+                </span>
+              </button>
+
               <button
                 onClick={handleAddToCart}
                 className="flex-1 h-[48px] rounded-xl border border-primary hover:bg-primary/5 text-primary font-bold text-body-md flex items-center justify-center gap-xs active:scale-98 transition-all"
               >
-                <span className="material-symbols-outlined">add_shopping_cart</span>
+                <span className="material-symbols-outlined">shopping_bag</span>
                 Add to Cart
               </button>
               
@@ -604,33 +759,101 @@ export default function ProductDetailPage() {
 
                 {activeTab === "reviews" && (
                   <div className="flex flex-col gap-md">
-                    <div className="flex flex-col gap-xs bg-surface-container-lowest p-sm border border-outline-variant/10 rounded-xl">
-                      <div className="flex items-center gap-xs">
-                        <span className="font-bold text-xs text-on-surface">Amit R.</span>
-                        <div className="flex text-amber-500 text-[12px]">
-                          <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                          <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                          <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                          <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                          <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                    {/* Add Review Form */}
+                    {status === "authenticated" ? (
+                      <form onSubmit={handleReviewSubmit} className="flex flex-col gap-sm bg-surface-container-low p-md border border-outline-variant/30 rounded-xl">
+                        <h4 className="font-bold text-xs text-on-surface uppercase tracking-wider">Write a review</h4>
+                        <div className="flex flex-col gap-xs">
+                          <label className="text-[11px] font-semibold text-on-surface-variant">Rating</label>
+                          <div className="flex gap-xs text-amber-500">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                type="button"
+                                onClick={() => setNewRating(star)}
+                                className="hover:scale-110 active:scale-95 transition-transform"
+                              >
+                                <span
+                                  className="material-symbols-outlined text-[24px]"
+                                  style={{ fontVariationSettings: `'FILL' ${newRating >= star ? 1 : 0}` }}
+                                >
+                                  star
+                                </span>
+                              </button>
+                            ))}
+                          </div>
                         </div>
+                        <div className="flex flex-col gap-xs">
+                          <label className="text-[11px] font-semibold text-on-surface-variant">Comment</label>
+                          <textarea
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            rows={3}
+                            placeholder="Share your thoughts about this product..."
+                            className="bg-surface border border-outline-variant rounded-lg p-sm text-xs outline-none focus:border-primary transition-colors text-on-surface placeholder:text-on-surface-variant/40"
+                          />
+                        </div>
+                        {submitError && (
+                          <div className="text-xs text-error font-medium">{submitError}</div>
+                        )}
+                        {submitSuccess && (
+                          <div className="text-xs text-primary font-medium">Review submitted successfully!</div>
+                        )}
+                        <button
+                          type="submit"
+                          disabled={submitting}
+                          className="h-[36px] bg-primary text-on-primary font-bold text-xs rounded-lg hover:opacity-90 active:scale-98 transition-all flex items-center justify-center gap-xs disabled:opacity-50"
+                        >
+                          {submitting ? "Submitting..." : "Submit Review"}
+                        </button>
+                      </form>
+                    ) : (
+                      <div className="p-md text-center bg-surface-container-low border border-outline-variant/20 rounded-xl">
+                        <p className="text-xs text-on-surface-variant">Please sign in to write a review.</p>
+                        <Link
+                          href={`/login?redirect=/product/${params?.id}`}
+                          className="mt-sm inline-block h-[32px] px-md bg-primary text-on-primary font-bold text-xs rounded-lg hover:opacity-90 active:scale-95 transition-all flex items-center justify-center w-fit mx-auto"
+                        >
+                          Login to Account
+                        </Link>
                       </div>
-                      <p className="text-xs text-on-surface-variant italic">"Outstanding craftsmanship. The detailing is gorgeous and the delivery was fast. Absolutely worth it!"</p>
-                    </div>
+                    )}
 
-                    <div className="flex flex-col gap-xs bg-surface-container-lowest p-sm border border-outline-variant/10 rounded-xl">
-                      <div className="flex items-center gap-xs">
-                        <span className="font-bold text-xs text-on-surface">Priya S.</span>
-                        <div className="flex text-amber-500 text-[12px]">
-                          <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                          <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                          <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                          <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                          <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 0" }}>star</span>
-                        </div>
+                    {/* Reviews List */}
+                    {reviewsLoading ? (
+                      <div className="text-xs text-on-surface-variant text-center py-md animate-pulse">
+                        Loading reviews...
                       </div>
-                      <p className="text-xs text-on-surface-variant italic">"Beautiful product. The colors are slightly different from the video but the handcrafted quality is top-notch."</p>
-                    </div>
+                    ) : reviews.length === 0 ? (
+                      <div className="text-xs text-on-surface-variant text-center py-md italic bg-surface-container-lowest p-sm border border-outline-variant/10 rounded-xl">
+                        No reviews yet for this product. Be the first to leave a review!
+                      </div>
+                    ) : (
+                      reviews.map((rev) => (
+                        <div key={rev._id} className="flex flex-col gap-xs bg-surface-container-lowest p-sm border border-outline-variant/10 rounded-xl">
+                          <div className="flex items-center gap-xs">
+                            <span className="font-bold text-xs text-on-surface">
+                              {rev.userId?.name || "Shopper"}
+                            </span>
+                            <div className="flex text-amber-500 text-[12px]">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <span
+                                  key={i}
+                                  className="material-symbols-outlined text-[14px]"
+                                  style={{ fontVariationSettings: `'FILL' ${rev.rating >= i + 1 ? 1 : 0}` }}
+                                >
+                                  star
+                                </span>
+                              ))}
+                            </div>
+                            <span className="text-[10px] text-on-surface-variant ml-auto font-medium">
+                              {new Date(rev.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="text-xs text-on-surface-variant italic leading-relaxed">"{rev.comment}"</p>
+                        </div>
+                      ))
+                    )}
                   </div>
                 )}
               </div>
@@ -671,10 +894,25 @@ export default function ProductDetailPage() {
       <div className="md:hidden fixed bottom-0 left-0 w-full z-50 bg-surface/90 border-t border-outline-variant/20 backdrop-blur-md px-md py-sm pb-[calc(10px+env(safe-area-inset-bottom))] flex gap-sm items-center justify-center shadow-lg">
         <div className="w-full max-w-md flex gap-sm bg-transparent">
           <button
+            onClick={handleToggleWishlist}
+            className={`w-[44px] h-[44px] shrink-0 rounded-xl border flex items-center justify-center active:scale-95 transition-all duration-200 ${
+              isWishlisted 
+                ? "bg-rose-500/10 text-rose-500 border-rose-500/30" 
+                : "border-outline-variant/50 text-on-surface"
+            }`}
+            aria-label="Wishlist"
+            title={isWishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
+          >
+            <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: isWishlisted ? "'FILL' 1" : "'FILL' 0" }}>
+              favorite
+            </span>
+          </button>
+
+          <button
             onClick={handleAddToCart}
             className="flex-1 h-[44px] rounded-xl border border-primary text-primary font-bold text-xs bg-transparent flex items-center justify-center gap-xs active:scale-95 transition-all duration-200"
           >
-            <span className="material-symbols-outlined text-[18px]">shopping_cart</span>
+            <span className="material-symbols-outlined text-[18px]">shopping_bag</span>
             Add to Cart
           </button>
           

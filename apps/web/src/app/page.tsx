@@ -509,13 +509,23 @@ export default function Home() {
               <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>person</span>
               My Profile
             </Link>
-            <Link 
-              href="/settings"
-              className="flex items-center gap-md text-on-surface-variant hover:bg-surface-container px-md py-sm rounded-lg font-label-xs text-label-xs transition-transform duration-300 ease-in-out hover:scale-95"
-            >
-              <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>settings</span>
-              Settings
-            </Link>
+            {(!isSignedIn || ((session?.user as any)?.role !== "ADMIN" && accountType !== "seller")) ? (
+              <Link 
+                href="/orders"
+                className="flex items-center gap-md text-on-surface-variant hover:bg-surface-container px-md py-sm rounded-lg font-label-xs text-label-xs transition-transform duration-300 ease-in-out hover:scale-95"
+              >
+                <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>receipt_long</span>
+                My Orders
+              </Link>
+            ) : (
+              <Link 
+                href="/settings"
+                className="flex items-center gap-md text-on-surface-variant hover:bg-surface-container px-md py-sm rounded-lg font-label-xs text-label-xs transition-transform duration-300 ease-in-out hover:scale-95"
+              >
+                <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>settings</span>
+                Settings
+              </Link>
+            )}
           </div>
         </aside>
 
@@ -610,7 +620,7 @@ export default function Home() {
               className="flex flex-col items-center gap-xs text-white hover:text-primary-fixed transition-colors group/btn"
             >
               <div className="w-10 h-10 rounded-full bg-black/20 backdrop-blur-sm border-[0.5px] border-white/30 flex items-center justify-center hover:bg-black/40 transition-colors">
-                <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>add_shopping_cart</span>
+                <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>shopping_bag</span>
               </div>
               <span className="font-label-xs text-label-xs text-white/90 drop-shadow-md">Add to cart</span>
             </button>
@@ -683,64 +693,6 @@ export default function Home() {
           </div>
 
         </section>
-
-        {/* Right Sidebar: Up Next Video List (Desktop Only) */}
-        <aside className="hidden md:flex flex-col w-72 h-[calc(100vh-100px)] py-xl gap-xl justify-center z-10">
-          <div className="bg-surface-container-low rounded-xl border-[0.5px] border-outline-variant p-md flex flex-col gap-md shadow-md">
-            <h3 className="font-body-lg text-body-lg text-on-surface font-semibold border-b-[0.5px] border-outline-variant pb-sm">
-              {activeCategoryFilter === "all" ? "Up Next" : `${activeCategoryFilter.toUpperCase()} Crafts`}
-            </h3>
-            
-            <div className="flex flex-col gap-md overflow-y-auto max-h-[300px] pr-xs hide-scrollbar">
-              {nextUpVideos.length === 0 ? (
-                <div className="text-xs text-on-surface-variant text-center py-sm italic">
-                  No other videos in this category.
-                </div>
-              ) : (
-                nextUpVideos.map((video) => {
-                  const filteredIdx = filteredVideos.findIndex((val) => val.id === video.id);
-                  return (
-                    <div 
-                      key={video.id}
-                      onClick={() => setActiveVideoIdx(filteredIdx)}
-                      className="flex gap-sm items-start group cursor-pointer border border-transparent hover:border-primary-fixed-dim/20 hover:bg-white/5 p-1 rounded-lg transition-all"
-                    >
-                      <div className="w-16 h-20 rounded bg-surface-container-high border-[0.5px] border-outline-variant overflow-hidden flex-shrink-0 relative">
-                        <img 
-                          alt={video.title} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                          src={video.productThumb} 
-                        />
-                        <div className="absolute bottom-1 right-1 bg-black/60 rounded px-1 text-[9px] text-white font-price-md">0:15</div>
-                      </div>
-                      <div className="flex flex-col gap-[2px] min-w-0">
-                        <span className="font-body-sm text-body-sm text-on-surface line-clamp-2 group-hover:text-primary transition-colors font-medium">
-                          {video.title}
-                        </span>
-                        <span className="font-label-xs text-label-xs text-on-surface-variant font-semibold">
-                          {video.seller}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-
-            {/* Clear Filters helper inside Sidebar */}
-            {activeCategoryFilter !== "all" && (
-              <button 
-                onClick={() => {
-                  setActiveCategoryFilter("all");
-                  setActiveVideoIdx(0);
-                }}
-                className="text-xs font-bold text-primary hover:underline self-start pt-xs border-t border-outline-variant/30 w-full text-left"
-              >
-                Clear category filter
-              </button>
-            )}
-          </div>
-        </aside>
       </main>
 
       {/* 3. MOBILE BOTTOM NAVBAR */}
@@ -855,44 +807,16 @@ export default function Home() {
             <div className="border-t-[0.5px] border-outline-variant py-sm shrink-0 bg-surface">
               <ul className="flex flex-col">
                 <li className="stagger-item" style={{ animationDelay: "550ms" }}>
-                  <a 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (!isSignedIn) {
-                        router.push("/sign-in?redirect_url=/profile");
-                        return;
-                      }
-                      alert("Opening Wishlist items...");
-                      setIsCategorySidebarOpen(false);
-                    }}
-                    className="flex items-center h-[48px] px-md text-on-surface hover:bg-surface-container-low transition-colors" 
-                    href="#"
-                  >
-                    <span className="material-symbols-outlined mr-sm text-[18px]">favorite</span>
-                    <span className="font-body-sm text-body-sm">My wishlist</span>
-                  </a>
-                </li>
-                <li className="stagger-item" style={{ animationDelay: "600ms" }}>
-                  <Link 
-                    href={isSignedIn ? "/orders" : "/login?redirect=/orders"}
-                    onClick={() => setIsCategorySidebarOpen(false)}
-                    className="flex items-center h-[48px] px-md text-on-surface hover:bg-surface-container-low transition-colors" 
-                  >
-                    <span className="material-symbols-outlined mr-sm text-[18px]">receipt_long</span>
-                    <span className="font-body-sm text-body-sm">My orders</span>
-                  </Link>
-                </li>
-                <li className="stagger-item" style={{ animationDelay: "650ms" }}>
                   <Link 
                     href="/faq"
                     onClick={() => setIsCategorySidebarOpen(false)}
-                    className="flex items-center h-[48px] px-md text-on-surface hover:bg-surface-container-low transition-colors border-t border-outline-variant/10" 
+                    className="flex items-center h-[48px] px-md text-on-surface hover:bg-surface-container-low transition-colors" 
                   >
                     <span className="material-symbols-outlined mr-sm text-[18px]">help</span>
                     <span className="font-body-sm text-body-sm">FAQ & Help</span>
                   </Link>
                 </li>
-                <li className="stagger-item" style={{ animationDelay: "700ms" }}>
+                <li className="stagger-item" style={{ animationDelay: "600ms" }}>
                   <Link 
                     href="/contact"
                     onClick={() => setIsCategorySidebarOpen(false)}
